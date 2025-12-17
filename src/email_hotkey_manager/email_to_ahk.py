@@ -1,9 +1,12 @@
 import re
 import csv
 import json
+import string
 from collections import defaultdict
 from pathlib import Path
-import string
+from email.parser import BytesParser
+from email.policy import default
+from email.utils import getaddresses
 
 
 # ===============================
@@ -11,6 +14,8 @@ import string
 # ===============================
 
 EMAIL_PATTERN = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+EMAIL_REGEX = re.compile(EMAIL_PATTERN)
+
 ENCODINGS = ['utf-8', 'utf-16', 'iso-8859-1']
 
 # Reserved shortcuts
@@ -22,6 +27,43 @@ AVAILABLE_KEYS = [k for k in string.ascii_uppercase if k not in RESERVED_KEYS]
 # Email extraction
 # ===============================
 
+def extract_emails_from_eml(file_path: Path) -> set[str]:
+    """
+    Extract emails from .eml files:
+    - Headers: From / To / Cc / Bcc
+    - Body: text/plain, text/html
+    """
+    results = set()
+
+    with open(file_path, "rb") as f:
+        msg = BytesParser(policy=default).parse(f)
+
+    # ---- Headers ----
+    for field in ("from", "to", "cc", "bcc"):
+        values = msg.get_all(field, [])
+        for _, addr in getaddresses(values):
+            if addr:
+                results.add(addr.lower())
+
+    # ---- Body ----
+    if msg.is_multipart():
+        for part in msg.walk():
+            if part.get_content_type() in ("text/plain", "text/html"):
+                try:
+                    content = part.get_content()
+                except Exception:
+                    continue
+                results.update(e.lower() for e in EMAIL_REGEX.findall(content))
+    else:
+        try:
+            content = msg.get_content()
+            results.update(e.lower() for e in EMAIL_REGEX.findall(content))
+        except Exception:
+            pass
+
+    return results
+
+
 def extract_emails_from_file(file_path):
     emails = set()
     file_path = Path(file_path)
@@ -29,7 +71,10 @@ def extract_emails_from_file(file_path):
     if not file_path.exists():
         raise FileNotFoundError("Input file not found.")
 
-    if file_path.suffix.lower() == ".csv":
+    suffix = file_path.suffix.lower()
+
+    # ---- CSV ----
+    if suffix == ".csv":
         for encoding in ENCODINGS:
             try:
                 with open(file_path, newline="", encoding=encoding) as csvfile:
@@ -37,26 +82,34 @@ def extract_emails_from_file(file_path):
                     for row in reader:
                         for cell in row:
                             emails.update(
-                                e.lower() for e in re.findall(EMAIL_PATTERN, cell)
+                                e.lower() for e in EMAIL_REGEX.findall(cell)
                             )
                 break
             except (UnicodeDecodeError, csv.Error):
                 continue
 
-    elif file_path.suffix.lower() == ".txt":
+    # ---- TXT ----
+    elif suffix == ".txt":
         for encoding in ENCODINGS:
             try:
                 content = file_path.read_text(encoding=encoding)
                 emails.update(
-                    e.lower() for e in re.findall(EMAIL_PATTERN, content)
+                    e.lower() for e in EMAIL_REGEX.findall(content)
                 )
                 break
             except UnicodeDecodeError:
                 continue
-    else:
-        raise ValueError("Unsupported file type. Use CSV or TXT.")
 
+    # ---- EML (NEW) ----
+    elif suffix == ".eml":
+        emails = extract_emails_from_eml(file_path)
+
+    else:
+        raise ValueError("Unsupported file type. Use CSV, TXT, or EML.")
+
+    # Explicit exclusion (preserved behavior)
     emails.discard("marc.turner@ukg.com")
+
     return sorted(emails)
 
 
@@ -164,7 +217,7 @@ def run(input_file_path, ahk_output_path):
 # ===============================
 
 def main():
-    input_path = input("Enter CSV or TXT file path: ").strip('"')
+    input_path = input("Enter CSV, TXT, or EML file path: ").strip('"')
     output_path = input("Enter output .ahk file path: ").strip('"')
     run(input_path, output_path)
     print("AHK + manifest created successfully.")
