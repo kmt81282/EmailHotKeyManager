@@ -3,7 +3,7 @@
 **Email Hotkey Manager** is a Windows desktop application that generates and manages AutoHotkey shortcuts for quickly pasting email addresses.
 
 It is designed for speed, reliability, and zero setup:
-- No Python required
+- No Python required (for end users)
 - No AutoHotkey installation required
 - Single portable EXE
 
@@ -11,7 +11,7 @@ It is designed for speed, reliability, and zero setup:
 
 ## ✨ Features
 
-- Extract email addresses from **CSV or TXT** files
+- Extract email addresses from **CSV, TXT, or EML** files
 - Automatically group emails by domain
 - Generate deterministic `Ctrl + Shift + A–Z` hotkeys
 - Manage multiple **saved profiles**
@@ -22,7 +22,7 @@ It is designed for speed, reliability, and zero setup:
 
 ---
 
-## 🖥️ Requirements
+## 🖥️ Requirements (End Users)
 
 - **Windows 10 or Windows 11 (64-bit)**
 - No Python required
@@ -30,18 +30,39 @@ It is designed for speed, reliability, and zero setup:
 
 ---
 
-## 🚀 Getting Started
+🚀 Getting Started (End Users)
 
-1. Download `EmailHotkeyManager.exe` from the **Releases** page
-2. Double-click the EXE to launch
-3. No installation needed
+1. Download EmailHotkeyManager.zip from the Releases page
+2. Right-click the ZIP and choose Extract All
+3. Open the extracted EmailHotkeyManager folder
+4. Double-click EmailHotkeyManager.exe to launch
+
+ℹ️ Important:
+Run the EXE from inside the extracted folder. Do not move the EXE out of the folder.
+
+📌 Optional: Run from Desktop or Start Menu
+
+If you’d like to launch the app from another location (such as the Desktop or Start menu):
+1. Right-click EmailHotkeyManager.exe
+2. Choose Create shortcut
+3. Move the shortcut wherever you like
+Use the shortcut to launch the app.
+Do not move the original EXE out of the folder.
+
+## 📄 Supported Input Files
+
+- **.csv** — Email addresses in any column
+- **.txt** — Plain text email lists
+- **.eml** — Saved email messages
+  - Extracts from headers: From, To, Cc, Bcc
+  - Extracts from body: text/plain and text/html
 
 ---
 
 ## 🧭 How to Use
 
 ### 1️⃣ Generate a Profile
-1. Click **Browse** and select a CSV or TXT file
+1. Click **Browse** and select a CSV, TXT, or EML file
 2. Enter a **Profile Name**
 3. Click **Generate Hotkeys**
 
@@ -95,7 +116,7 @@ This app uses a **safe Arm & Trigger workflow** to avoid focus issues.
 
 - Uses AutoHotkey for automation
 - Uses a global hotkey listener (`F8`)
-- Antivirus software may show a warning on first run
+- Antivirus software may show a warning on first run  
   (common for automation tools)
 - Code signing can be added if required
 
@@ -110,21 +131,29 @@ This app uses a **safe Arm & Trigger workflow** to avoid focus issues.
 
 ---
 
-## 📦 Distribution
+## 👩‍💻 Development (Optional)
 
-This application is distributed as a **single portable EXE** via GitHub Releases.
+> This section is only for developers building from source.  
+> End users do **not** need Python.
+
+```bat
+pip install -r requirements.txt
+set PYTHONPATH=src
+python -m email_hotkey_manager.email_to_ahk_ui
+Build EXE
+pyinstaller --clean specs/email_to_ahk_ui.spec
+
+📦 Distribution
+
+This application is distributed as a single portable EXE via GitHub Releases.
 
 No installer. No registry changes.
 
----
+👤 Author
 
-## 👤 Author
+Marc Turner
 
-**Marc Turner**
-
----
-
-## 📄 License
+📄 License
 
 This project is provided for internal or personal use.
 Add a license file if you plan to distribute publicly.
